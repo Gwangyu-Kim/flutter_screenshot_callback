@@ -9,13 +9,11 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 import android.os.Environment;
 import android.os.FileObserver;
 import java.io.File;
-import android.util.Log;
 import android.os.Handler;
 import android.os.Looper;
 
 public class ScreenshotCallbackPlugin implements MethodCallHandler {
-  private static final String TAG = "ScreenshotCallbackPlugin";
-  private static final String absolutePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + File.separator + "Screenshots" + File.separator;
+  private static final String screenshotPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + File.separator + "Screenshots" + File.separator;
   private Handler handler;
   private FileObserver fileObserver;
 
@@ -30,30 +28,22 @@ public class ScreenshotCallbackPlugin implements MethodCallHandler {
   public void onMethodCall(MethodCall call, Result result) {
     if (call.method.equals("initialize")) {
       handler = new Handler(Looper.getMainLooper());
-      fileObserver = new FileObserver(absolutePath, FileObserver.CREATE){
+      fileObserver = new FileObserver(screenshotPath, FileObserver.CREATE){
         @Override
         public void onEvent(int event, String path) {
             if (event == FileObserver.CREATE) {
-
-              // use Handler to execute invokeMethod in UIThread
               handler.post(new Runnable() {
                 @Override
                 public void run() {
                   channel.invokeMethod("onCallback", null);
                 }
               });
-                
-              Log.d(TAG, "create screenshot file");
             }
         }
       };
-      Log.d(TAG, "initialize: service is initialized");
-      Log.d(TAG, absolutePath);
       fileObserver.startWatching();
       result.success("initialize");
-
     } else if (call.method.equals("dispose")) {
-      Log.d(TAG, "dispose: service is destroyed");
       fileObserver.stopWatching();
       result.success("dispose");
     } else {
